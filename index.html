@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JAGUABASE">
+<title>JAGUABASE 施術写真送信</title>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; background: #f5f5f5; min-height: 100vh; }
+  .header { background: #1a1a1a; color: white; padding: 16px 20px; font-size: 18px; font-weight: bold; text-align: center; position: sticky; top: 0; z-index: 100; }
+  .date-bar { background: white; padding: 12px 20px; font-size: 14px; color: #666; border-bottom: 1px solid #eee; text-align: center; }
+  .section { padding: 16px 20px; }
+  .section-title { font-size: 12px; color: #999; font-weight: bold; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .customer-list { display: flex; flex-direction: column; gap: 10px; }
+  .customer-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .customer-header { display: flex; align-items: center; padding: 14px 16px; cursor: pointer; user-select: none; }
+  .customer-header:active { background: #f9f9f9; }
+  .customer-avatar { width: 40px; height: 40px; border-radius: 50%; background: #1a1a1a; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+  .customer-info { flex: 1; min-width: 0; }
+  .customer-name { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+  .customer-meta { font-size: 12px; color: #999; margin-top: 2px; }
+  .no-line-badge { font-size: 10px; background: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+  .header-btns { display: flex; gap: 6px; align-items: center; margin-left: 8px; }
+  .stores-btn { padding: 6px 10px; background: #f0f0f0; border: none; border-radius: 6px; font-size: 11px; color: #333; cursor: pointer; text-decoration: none; white-space: nowrap; display: inline-block; }
+  .btn-qr { padding: 6px 10px; background: #1a1a1a; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+  .expand-icon { color: #bbb; font-size: 11px; margin-left: 4px; transition: transform 0.2s; }
+  .expand-icon.open { transform: rotate(180deg); }
+  .customer-body { display: none; border-top: 1px solid #f0f0f0; padding: 16px; }
+  .customer-body.open { display: block; }
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 11px; color: #999; font-weight: bold; margin-bottom: 5px; letter-spacing: 0.5px; display: block; }
+  .form-input { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; background: #fafafa; }
+  .form-input:focus { outline: none; border-color: #1a1a1a; background: white; }
+  textarea.form-input { resize: vertical; min-height: 60px; }
+  .photo-upload-area { padding: 20px 16px; text-align: center; border: 2px dashed #ddd; border-radius: 8px; cursor: pointer; margin-bottom: 12px; }
+  .photo-upload-area.has-photo { border-color: #ff6b47; background: #fff8f6; }
+  .thumb-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 8px; }
+  .thumb-img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; }
+  .upload-icon { font-size: 26px; margin-bottom: 4px; }
+  .upload-text { font-size: 12px; color: #999; }
+  .action-row { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-carte { flex: 1; padding: 12px 8px; background: white; color: #1a1a1a; border: 1.5px solid #1a1a1a; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .btn-line { flex: 2; padding: 12px 8px; background: #1a1a1a; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .btn-line:disabled, .btn-carte:disabled { opacity: 0.35; cursor: not-allowed; }
+  .result-msg { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; display: none; text-align: center; }
+  .result-msg.success { display: block; background: #e8f5e9; color: #2e7d32; }
+  .result-msg.error { display: block; background: #ffebee; color: #c62828; }
+  .loading-msg { display: none; text-align: center; padding: 8px; font-size: 13px; color: #888; }
+  .loading-msg.visible { display: block; }
+  .carte-preview { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; margin: 8px 0; font-size: 13px; text-align: left; line-height: 1.6; }
+  .btn-copy { width: 100%; padding: 10px; background: #4a90d9; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; margin-top: 4px; }
+  .stores-id-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+  .stores-id-row { display: flex; gap: 6px; align-items: center; margin-top: 5px; }
+  .stores-id-input { flex: 1; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; background: #fafafa; }
+  .btn-save-id { padding: 8px 14px; background: #555; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .empty-state { padding: 40px 20px; text-align: center; color: #999; font-size: 14px; }
+  input[type="file"] { display: none; }
+  /* QRモーダル */
+  .qr-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
+  .qr-modal.open { display: flex; }
+  .qr-box { background: white; border-radius: 16px; padding: 28px 24px; text-align: center; max-width: 300px; width: 90%; }
+  .qr-title { font-size: 14px; font-weight: bold; margin-bottom: 16px; }
+  .qr-note { font-size: 11px; color: #999; margin-top: 12px; }
+  .btn-qr-close { margin-top: 16px; padding: 10px 24px; background: #f0f0f0; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="header">JAGUABASE 施術写真送信</div>
+<div class="date-bar" id="dateBar">読み込み中...</div>
+
+<div class="section">
+  <div class="section-title">今日のお客様</div>
+  <div class="customer-list" id="customerList">
+    <div class="empty-state">読み込み中...</div>
+  </div>
+</div>
+
+<!-- QRモーダル -->
+<div class="qr-modal" id="qrModal">
+  <div class="qr-box">
+    <div class="qr-title">SNS・HP掲載の同意確認</div>
+    <p style="font-size:12px; color:#555; line-height:1.7; margin-bottom:16px;">
+      撮影した写真を弊社SNS及びHP等に<br>利用させていただく場合がございます。
+    </p>
+    <div id="qrStoreSelectRow" style="display:none; margin-bottom:12px;">
+      <select id="qrStoreSelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px;"></select>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button onclick="selectConsent('yes')" style="flex:1; padding:12px; background:#2e7d32; color:white; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer;">同意する</button>
+      <button onclick="selectConsent('no')"  style="flex:1; padding:12px; background:#c62828; color:white; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer;">同意しない</button>
+    </div>
+    <div id="qrImageArea" style="display:none; text-align:center;">
+      <img id="qrImg" src="" alt="QR" style="width:200px; height:200px;">
+      <div style="font-size:11px; color:#999; margin-top:8px;">LINEのカメラで読み取ると送信画面が開きます</div>
+    </div>
+    <button class="btn-qr-close" onclick="closeQR()">閉じる</button>
+  </div>
+</div>
+
+<script>
+var storeList = [];
+google.script.run.withSuccessHandler(function(s) { storeList = s; }).getStores();
+
+var today = new Date();
+document.getElementById('dateBar').textContent =
+  (today.getMonth()+1) + '月' + today.getDate() + '日（' +
+  ['日','月','火','水','木','金','土'][today.getDay()] + '）';
+
+var state = {};
+var carteTexts = {};
+
+google.script.run
+  .withSuccessHandler(renderCustomers)
+  .withFailureHandler(function(err) {
+    document.getElementById('customerList').innerHTML =
+      '<div class="empty-state">エラー：' + err.message + '</div>';
+  })
+  .getTodayCustomers();
+
+function renderCustomers(customers) {
+  var list = document.getElementById('customerList');
+  if (!customers || customers.length === 0) {
+    list.innerHTML = '<div class="empty-state">本日の予約はありません</div>';
+    return;
+  }
+
+  var html = '';
+  for (var idx = 0; idx < customers.length; idx++) {
+    var c = customers[idx];
+    state[idx] = {
+      photos:      [],
+      displayName: c.displayName,
+      staff:       c.staff,
+      storesId:    c.storesId || '',
+      basicId:     c.basicId  || ''
+    };
+
+    var storesUrl     = c.storesId ? 'https://reserve.stores.app/dashboard/customers/' + c.storesId : 'https://reserve.stores.app/dashboard/customers';
+    var storesIdLabel = c.storesId ? c.storesId : '未登録';
+    var noLineBadge   = c.hasLineId ? '' : '<span class="no-line-badge">LINE未登録</span>';
+    var menuVal       = c.menu ? c.menu.replace(/"/g, '&quot;') : '';
+    var storesIdVal   = c.storesId ? c.storesId : '';
+    var avatarChar    = c.lastName ? c.lastName.charAt(0) : '?';
+    var lineDisabled  = c.hasLineId ? '' : 'disabled';
+    var lineLabel     = c.hasLineId ? 'LINE送信' : 'LINE未登録';
+
+    html += '<div class="customer-card" id="card_' + idx + '">';
+    html += '<div class="customer-header" onclick="toggleCard(' + idx + ')">';
+    html += '<div class="customer-avatar">' + avatarChar + '</div>';
+    html += '<div class="customer-info">';
+    html += '<div class="customer-name">' + c.lastName + noLineBadge + '</div>';
+    html += '<div class="customer-meta">' + c.time + ' · 担当：' + c.staff + '</div>';
+    html += '</div>';
+    html += '<div class="header-btns">';
+    html += '<a href="' + storesUrl + '" target="_blank" class="stores-btn" onclick="event.stopPropagation()">STORES</a>';
+    if (c.storesId) {
+      html += '<button class="btn-qr" onclick="showQR(event,' + idx + ')">QR</button>';
+    }
+    html += '<span class="expand-icon" id="icon_' + idx + '">▼</span>';
+    html += '</div></div>';
+
+    html += '<div class="customer-body" id="body_' + idx + '">';
+    html += '<div class="form-group"><label class="form-label">サイズ・デザイン</label>';
+    html += '<input class="form-input" id="design_' + idx + '" placeholder="例: 3×3 ハートとクローバー" value="' + menuVal + '"></div>';
+    html += '<div class="form-group"><label class="form-label">施術部位</label>';
+    html += '<input class="form-input" id="area_' + idx + '" placeholder="例: 右膝上"></div>';
+    html += '<div class="form-group"><label class="form-label">メモ（来店動機・職業など）</label>';
+    html += '<textarea class="form-input" id="memo_' + idx + '" placeholder="自由記述"></textarea></div>';
+    html += '<label class="form-label">施術写真</label>';
+    html += '<input type="file" id="file_' + idx + '" accept="image/*" multiple>';
+    html += '<div class="photo-upload-area" id="upload_' + idx + '" onclick="triggerFile(' + idx + ')">';
+    html += '<div class="thumb-grid" id="thumbGrid_' + idx + '"></div>';
+    html += '<div class="upload-icon">📷</div>';
+    html += '<div class="upload-text" id="uploadText_' + idx + '">タップして写真を選ぶ（最大4枚）</div></div>';
+    html += '<div class="loading-msg" id="loading_' + idx + '">送信中...</div>';
+    html += '<div class="result-msg" id="result_' + idx + '"></div>';
+    html += '<div class="action-row">';
+    html += '<button class="btn-carte" onclick="saveCarte(' + idx + ')">カルテ保存</button>';
+    html += '<button class="btn-line" id="sendBtn_' + idx + '" onclick="sendPhoto(' + idx + ')" ' + lineDisabled + '>' + lineLabel + '</button>';
+    html += '</div>';
+    html += '<div class="stores-id-section">';
+    html += '<label class="form-label">STORES顧客ID（' + storesIdLabel + '）</label>';
+    html += '<div class="stores-id-row">';
+    html += '<input class="stores-id-input" id="storesId_' + idx + '" placeholder="URLの末尾の数字" value="' + storesIdVal + '">';
+    html += '<button class="btn-save-id" onclick="saveStoresId(' + idx + ')">保存</button>';
+    html += '</div></div></div></div>';
+  }
+  list.innerHTML = html;
+
+  for (var i = 0; i < customers.length; i++) {
+    (function(idx) {
+      document.getElementById('file_' + idx).addEventListener('change', function(e) {
+        var files = Array.from(e.target.files);
+        if (!files.length) return;
+        state[idx].photos = [];
+        var thumbGrid = document.getElementById('thumbGrid_' + idx);
+        thumbGrid.innerHTML = '';
+        var loaded = 0;
+        files.forEach(function(file) {
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            state[idx].photos.push({ base64: ev.target.result.split(',')[1], mimeType: file.type });
+            var img = document.createElement('img');
+            img.src = ev.target.result;
+            img.className = 'thumb-img';
+            thumbGrid.appendChild(img);
+            loaded++;
+            if (loaded === files.length) {
+              document.getElementById('uploadText_' + idx).textContent = files.length + '枚選択中';
+              document.getElementById('upload_' + idx).classList.add('has-photo');
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+    })(i);
+  }
+}
+
+function triggerFile(idx) { document.getElementById('file_' + idx).click(); }
+
+function toggleCard(idx) {
+  document.getElementById('body_' + idx).classList.toggle('open');
+  document.getElementById('icon_' + idx).classList.toggle('open');
+}
+
+function getCartePayload(idx) {
+  return {
+    displayName: state[idx].displayName,
+    storesId:    state[idx].storesId,
+    staff:       state[idx].staff,
+    design:      document.getElementById('design_' + idx).value,
+    area:        document.getElementById('area_'   + idx).value,
+    memo:        document.getElementById('memo_'   + idx).value
+  };
+}
+
+function showResult(idx, success, msg) {
+  var el = document.getElementById('result_' + idx);
+  el.className = 'result-msg ' + (success ? 'success' : 'error');
+  el.textContent = msg;
+}
+
+function formatCarteText(idx) {
+  var d = new Date();
+  var dateStr = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+  var staff  = state[idx].staff || '';
+  var design = document.getElementById('design_' + idx).value;
+  var area   = document.getElementById('area_'   + idx).value;
+  var memo   = document.getElementById('memo_'   + idx).value;
+  var text = dateStr + (staff ? '.' + staff : '') + '\n';
+  if (design) text += design;
+  if (area)   text += '（' + area + '）';
+  if (design || area) text += '\n';
+  if (memo)   text += memo;
+  return text.trim();
+}
+
+function showCarteResult(idx) {
+  var text = formatCarteText(idx);
+  carteTexts[idx] = text;
+  var el = document.getElementById('result_' + idx);
+  el.className = 'result-msg success';
+  el.innerHTML =
+    'カルテを保存しました' +
+    '<div class="carte-preview">' + text.replace(/\n/g, '<br>') + '</div>' +
+    '<button class="btn-copy" id="copyBtn_' + idx + '" onclick="copyCarteText(' + idx + ')">STORESにコピー</button>';
+}
+
+function copyCarteText(idx) {
+  var text = carteTexts[idx];
+  var btn  = document.getElementById('copyBtn_' + idx);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      btn.textContent = 'コピーしました';
+      setTimeout(function() { btn.textContent = 'STORESにコピー'; }, 2000);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'コピーしました';
+    setTimeout(function() { btn.textContent = 'STORESにコピー'; }, 2000);
+  }
+}
+
+function saveCarte(idx) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.success) showCarteResult(idx);
+      else showResult(idx, false, res.error);
+    })
+    .withFailureHandler(function(err) { showResult(idx, false, err.message); })
+    .saveCarteData(getCartePayload(idx));
+}
+
+function sendPhoto(idx) {
+  if (!state[idx].photos || state[idx].photos.length === 0) return;
+  document.getElementById('sendBtn_'  + idx).disabled = true;
+  document.getElementById('loading_'  + idx).classList.add('visible');
+  document.getElementById('result_'   + idx).className = 'result-msg';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      document.getElementById('loading_' + idx).classList.remove('visible');
+      if (res.success) showResult(idx, true, 'LINEを送信しました');
+      else {
+        showResult(idx, false, res.error);
+        document.getElementById('sendBtn_' + idx).disabled = false;
+      }
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById('loading_' + idx).classList.remove('visible');
+      showResult(idx, false, err.message);
+      document.getElementById('sendBtn_' + idx).disabled = false;
+    })
+    .sendPhotoFromPWA(state[idx].displayName, state[idx].storesId, state[idx].photos, getCartePayload(idx));
+}
+
+function saveStoresId(idx) {
+  var storesId = document.getElementById('storesId_' + idx).value.trim();
+  if (!storesId) { alert('IDを入力してください'); return; }
+  google.script.run
+    .withSuccessHandler(function(res) {
+      showResult(idx, res.success, res.success ? 'STORES IDを保存しました' : res.error);
+    })
+    .withFailureHandler(function(err) { showResult(idx, false, err.message); })
+    .saveStoresId(state[idx].displayName, storesId);
+}
+
+var currentQRState = { storesId: '', basicId: '' };
+
+function showQR(event, idx) {
+  event.stopPropagation();
+  var storesId = state[idx].storesId;
+  var basicId  = state[idx].basicId;
+
+  if (storeList.length > 1) {
+    var options = storeList.map(function(s) {
+      var selected = (s.basicId === basicId) ? ' selected' : '';
+      return '<option value="' + s.basicId + '"' + selected + '>' + s.name + '</option>';
+    }).join('');
+    document.getElementById('qrStoreSelect').innerHTML = options;
+    document.getElementById('qrStoreSelectRow').style.display = 'block';
+    document.getElementById('qrStoreSelect').onchange = function() {
+      currentQRState.basicId = this.value;
+      document.getElementById('qrImageArea').style.display = 'none';
+    };
+    basicId = basicId || storeList[0].basicId;
+  } else if (storeList.length === 1) {
+    basicId = storeList[0].basicId;
+  } else if (!basicId) {
+    alert('店舗マスタのD列にbasicId(@xxxxx形式)を入力してください');
+    return;
+  }
+
+  currentQRState.storesId = storesId;
+  currentQRState.basicId  = basicId;
+  document.getElementById('qrImageArea').style.display = 'none';
+  document.getElementById('qrImg').src = '';
+  document.getElementById('qrModal').classList.add('open');
+}
+
+function selectConsent(consent) {
+  var suffix  = consent === 'yes' ? ' \u540C\u610F' : ' \u975E\u540C\u610F';
+  var text    = 'storesId:' + currentQRState.storesId + suffix;
+  var lineUrl = 'https://line.me/R/oaMessage/' + currentQRState.basicId + '/?text=' + encodeURIComponent(text);
+  document.getElementById('qrImg').src = '';
+  document.getElementById('qrImg').alt = '生成中...';
+  document.getElementById('qrImageArea').style.display = 'block';
+  google.script.run
+    .withSuccessHandler(function(dataUrl) {
+      document.getElementById('qrImg').src = dataUrl;
+      document.getElementById('qrImg').alt = 'QR';
+    })
+    .withFailureHandler(function() {
+      document.getElementById('qrImg').alt = '生成失敗';
+    })
+    .getQRDataUrl(lineUrl);
+}
+
+function closeQR() {
+  document.getElementById('qrModal').classList.remove('open');
+  document.getElementById('qrStoreSelectRow').style.display = 'none';
+  document.getElementById('qrImageArea').style.display = 'none';
+  currentQRState = { storesId: '', basicId: '' };
+}
+</script>
+</body>
+</html>
