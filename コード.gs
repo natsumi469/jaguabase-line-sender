@@ -117,8 +117,11 @@ function setupTrigger() {
 // 顧客一覧（PWA用）
 // ==========================================
 
-function getTodayCustomers() {
-  const today      = new Date();
+function getTodayCustomers(dateOffset) {
+  const offset     = dateOffset || 0;
+  const base       = new Date();
+  base.setDate(base.getDate() + offset);
+  const today      = base;
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
   const endOfDay   = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
   const sheet        = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.CUSTOMERS);
