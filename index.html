@@ -27,7 +27,7 @@
   .customer-meta { font-size: 12px; color: #999; margin-top: 2px; }
   .no-line-badge { font-size: 10px; background: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
   .header-btns { display: flex; gap: 6px; align-items: center; margin-left: 8px; }
-  .stores-btn { padding: 6px 10px; background: #f0f0f0; border: none; border-radius: 6px; font-size: 11px; color: #333; cursor: pointer; text-decoration: none; white-space: nowrap; display: inline-block; }
+  .stores-btn { display: block; width: 100%; padding: 10px 8px; background: #f0f0f0; border: none; border-radius: 10px; font-size: 13px; color: #555; cursor: pointer; text-decoration: none; text-align: center; margin-top: 8px; }
   .btn-qr { padding: 6px 10px; background: #1a1a1a; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; }
   .expand-icon { color: #bbb; font-size: 11px; margin-left: 4px; transition: transform 0.2s; }
   .expand-icon.open { transform: rotate(180deg); }
@@ -195,7 +195,6 @@ function renderCustomers(customers) {
     html += '<div class="customer-meta">' + c.time + ' · 担当：' + c.staff + '</div>';
     html += '</div>';
     html += '<div class="header-btns">';
-    html += '<a href="' + storesUrl + '" target="_blank" class="stores-btn" onclick="event.stopPropagation()">STORES</a>';
     if (c.storesId) {
       html += '<button class="btn-qr" onclick="showQR(event,' + idx + ')">QR</button>';
     }
@@ -221,6 +220,10 @@ function renderCustomers(customers) {
     html += '<button class="btn-carte" onclick="saveCarte(' + idx + ')">カルテ保存</button>';
     html += '<button class="btn-line" id="sendBtn_' + idx + '" onclick="sendPhoto(' + idx + ')" ' + lineDisabled + '>' + lineLabel + '</button>';
     html += '</div>';
+    html += '<a href="' + storesUrl + '" target="_blank" class="stores-btn">STORESで顧客を開く</a>';
+    if (c.storesId) {
+      html += '<a href="https://reserve.stores.app/m/reservations/' + c.storesId + '" target="_blank" class="stores-btn">【10】予約メモに画像を追加</a>';
+    }
     html += '<div class="stores-id-section">';
     html += '<label class="form-label">STORES顧客ID（' + storesIdLabel + '）</label>';
     html += '<div class="stores-id-row">';
