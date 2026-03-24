@@ -243,20 +243,33 @@ function renderCustomers(customers) {
         thumbGrid.innerHTML = '';
         var loaded = 0;
         files.forEach(function(file) {
-          var reader = new FileReader();
-          reader.onload = function(ev) {
-            state[idx].photos.push({ base64: ev.target.result.split(',')[1], mimeType: file.type });
-            var img = document.createElement('img');
-            img.src = ev.target.result;
-            img.className = 'thumb-img';
-            thumbGrid.appendChild(img);
-            loaded++;
-            if (loaded === files.length) {
-              document.getElementById('uploadText_' + idx).textContent = files.length + '枚選択中';
-              document.getElementById('upload_' + idx).classList.add('has-photo');
-            }
+          // canvasで標準JPEGに変換（Pixel 9 Ultra HDRなど非標準フォーマット対策）
+          var objectUrl = URL.createObjectURL(file);
+          var imgEl = new Image();
+          imgEl.onload = function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = imgEl.naturalWidth;
+            canvas.height = imgEl.naturalHeight;
+            canvas.getContext('2d').drawImage(imgEl, 0, 0);
+            URL.revokeObjectURL(objectUrl);
+            canvas.toBlob(function(blob) {
+              var reader = new FileReader();
+              reader.onload = function(ev) {
+                state[idx].photos.push({ base64: ev.target.result.split(',')[1], mimeType: 'image/jpeg' });
+                var thumb = document.createElement('img');
+                thumb.src = ev.target.result;
+                thumb.className = 'thumb-img';
+                thumbGrid.appendChild(thumb);
+                loaded++;
+                if (loaded === files.length) {
+                  document.getElementById('uploadText_' + idx).textContent = files.length + '枚選択中';
+                  document.getElementById('upload_' + idx).classList.add('has-photo');
+                }
+              };
+              reader.readAsDataURL(blob);
+            }, 'image/jpeg', 0.92);
           };
-          reader.readAsDataURL(file);
+          imgEl.src = objectUrl;
         });
       });
     })(i);

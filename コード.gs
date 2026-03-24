@@ -247,9 +247,10 @@ function sendPhotoFromPWA(displayName, storesId, photosArray, carteData) {
 
     for (let i = 0; i < photosArray.length; i++) {
       const photo    = photosArray[i];
-      const ext      = photo.mimeType === 'image/png' ? 'png' : 'jpg';
+      const mimeType = (photo.mimeType && photo.mimeType.startsWith('image/')) ? photo.mimeType : 'image/jpeg';
+      const ext      = mimeType === 'image/png' ? 'png' : 'jpg';
       const fileName = filePrefix + dateStr + '_' + resolvedName + design + '_' + (i+1) + '.' + ext;
-      const blob     = Utilities.newBlob(Utilities.base64Decode(photo.base64), photo.mimeType, fileName);
+      const blob     = Utilities.newBlob(Utilities.base64Decode(photo.base64), mimeType, fileName);
       const file     = folder.createFile(blob);
       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
       imageUrls.push('https://lh3.googleusercontent.com/d/' + file.getId());
