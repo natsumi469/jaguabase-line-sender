@@ -27,7 +27,7 @@
   .customer-meta { font-size: 12px; color: #999; margin-top: 2px; }
   .no-line-badge { font-size: 10px; background: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
   .header-btns { display: flex; gap: 6px; align-items: center; margin-left: 8px; }
-  .stores-btn { display: block; width: 100%; padding: 10px 8px; background: #f0f0f0; border: none; border-radius: 10px; font-size: 13px; color: #555; cursor: pointer; text-decoration: none; text-align: center; margin-top: 8px; }
+  .stores-btn { display: flex; width: 100%; padding: 10px 8px; background: #96aeda; border: none; border-radius: 10px; font-size: 13px; font-weight: bold; color: #555; cursor: pointer; text-decoration: none; text-align: center; margin-top: 8px; }
   .btn-qr { padding: 6px 10px; background: #1a1a1a; color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; }
   .expand-icon { color: #bbb; font-size: 11px; margin-left: 4px; transition: transform 0.2s; }
   .expand-icon.open { transform: rotate(180deg); }
@@ -56,7 +56,7 @@
   .carte-preview { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; margin: 8px 0; font-size: 13px; text-align: left; line-height: 1.6; }
   .btn-copy { width: 100%; padding: 10px; background: #4a90d9; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; margin-top: 4px; }
   .stores-id-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
-  .stores-id-row { display: flex; gap: 6px; align-items: center; margin-top: 5px; }
+  .stores-id-row { display: flex; gap: 6px; align-items: center; margin-top: 15px; }
   .stores-id-input { flex: 1; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; background: #fafafa; }
   .btn-save-id { padding: 8px 14px; background: #555; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap; }
   .empty-state { padding: 40px 20px; text-align: center; color: #999; font-size: 14px; }
@@ -72,7 +72,7 @@
 </head>
 <body>
 
-<div class="header">JAGUABASE 施術写真送信</div>
+<div class="header">📸 JAGUABASE 施術写真送信</div>
 <div class="date-bar">
   <button class="date-nav-btn" id="btnPrev" onclick="changeDate(-1)">&#9664;</button>
   <span id="dateLabel">読み込み中...</span>
@@ -109,343 +109,357 @@
 </div>
 
 <script>
-var storeList = [];
-google.script.run.withSuccessHandler(function(s) { storeList = s; }).getStores();
+  var storeList = [];
+  google.script.run.withSuccessHandler(function(s) { storeList = s; }).getStores();
 
-var state = {};
-var carteTexts = {};
-var currentOffset = 0;
-var DAY_NAMES = ['日','月','火','水','木','金','土'];
+  var state = {};
+  var carteTexts = {};
+  var currentOffset = 0;
+  var DAY_NAMES = ['日','月','火','水','木','金','土'];
 
-function getDateForOffset(offset) {
-  var d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d;
-}
+  function getDateForOffset(offset) {
+    var d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d;
+  }
 
-function formatDateLabel(d) {
-  return (d.getMonth()+1) + '月' + d.getDate() + '日（' + DAY_NAMES[d.getDay()] + '）';
-}
+  function formatDateLabel(d) {
+    return (d.getMonth()+1) + '月' + d.getDate() + '日（' + DAY_NAMES[d.getDay()] + '）';
+  }
 
-function updateDateUI() {
-  var d = getDateForOffset(currentOffset);
-  document.getElementById('dateLabel').textContent = formatDateLabel(d);
-  var isToday = (currentOffset === 0);
-  document.getElementById('sectionTitle').textContent = isToday ? '今日のお客様' : formatDateLabel(d) + 'のお客様';
-  document.getElementById('btnPrev').className = 'date-nav-btn' + (currentOffset <= -4 ? ' disabled' : '');
-  document.getElementById('btnNext').className = 'date-nav-btn' + (currentOffset >= 4  ? ' disabled' : '');
-}
+  function updateDateUI() {
+    var d = getDateForOffset(currentOffset);
+    document.getElementById('dateLabel').textContent = formatDateLabel(d);
+    var isToday = (currentOffset === 0);
+    document.getElementById('sectionTitle').textContent = isToday ? '今日のお客様' : formatDateLabel(d) + 'のお客様';
+    document.getElementById('btnPrev').className = 'date-nav-btn' + (currentOffset <= -4 ? ' disabled' : '');
+    document.getElementById('btnNext').className = 'date-nav-btn' + (currentOffset >= 4  ? ' disabled' : '');
+  }
 
-function changeDate(delta) {
-  var next = currentOffset + delta;
-  if (next < -4 || next > 4) return;
-  currentOffset = next;
-  state = {};
-  carteTexts = {};
+  function changeDate(delta) {
+    var next = currentOffset + delta;
+    if (next < -4 || next > 4) return;
+    currentOffset = next;
+    state = {};
+    carteTexts = {};
+    updateDateUI();
+    loadCustomers();
+  }
+
+  function loadCustomers() {
+    document.getElementById('customerList').innerHTML = '<div class="empty-state">読み込み中...</div>';
+    google.script.run
+      .withSuccessHandler(renderCustomers)
+      .withFailureHandler(function(err) {
+        document.getElementById('customerList').innerHTML =
+          '<div class="empty-state">エラー：' + err.message + '</div>';
+      })
+      .getTodayCustomers(currentOffset);
+  }
+
   updateDateUI();
   loadCustomers();
-}
 
-function loadCustomers() {
-  document.getElementById('customerList').innerHTML = '<div class="empty-state">読み込み中...</div>';
-  google.script.run
-    .withSuccessHandler(renderCustomers)
-    .withFailureHandler(function(err) {
-      document.getElementById('customerList').innerHTML =
-        '<div class="empty-state">エラー：' + err.message + '</div>';
-    })
-    .getTodayCustomers(currentOffset);
-}
-
-updateDateUI();
-loadCustomers();
-
-function renderCustomers(customers) {
-  var list = document.getElementById('customerList');
-  if (!customers || customers.length === 0) {
-    list.innerHTML = '<div class="empty-state">本日の予約はありません</div>';
-    return;
-  }
-
-  var html = '';
-  for (var idx = 0; idx < customers.length; idx++) {
-    var c = customers[idx];
-    state[idx] = {
-      photos:      [],
-      displayName: c.displayName,
-      staff:       c.staff,
-      storesId:    c.storesId || '',
-      basicId:     c.basicId  || ''
-    };
-
-    var storesUrl     = c.storesId ? 'https://reserve.stores.app/dashboard/customers/' + c.storesId : 'https://reserve.stores.app/dashboard/customers';
-    var storesIdLabel = c.storesId ? c.storesId : '未登録';
-    var noLineBadge   = c.hasLineId ? '' : '<span class="no-line-badge">LINE未登録</span>';
-    var menuVal       = c.menu ? c.menu.replace(/"/g, '&quot;') : '';
-    var storesIdVal   = c.storesId ? c.storesId : '';
-    var avatarChar    = c.lastName ? c.lastName.charAt(0) : '?';
-    var lineDisabled  = c.hasLineId ? '' : 'disabled';
-    var lineLabel     = c.hasLineId ? 'LINE送信' : 'LINE未登録';
-
-    html += '<div class="customer-card" id="card_' + idx + '">';
-    html += '<div class="customer-header" onclick="toggleCard(' + idx + ')">';
-    html += '<div class="customer-avatar">' + avatarChar + '</div>';
-    html += '<div class="customer-info">';
-    html += '<div class="customer-name">' + c.lastName + noLineBadge + '</div>';
-    html += '<div class="customer-meta">' + c.time + ' · 担当：' + c.staff + '</div>';
-    html += '</div>';
-    html += '<div class="header-btns">';
-    if (c.storesId) {
-      html += '<button class="btn-qr" onclick="showQR(event,' + idx + ')">QR</button>';
+  function renderCustomers(customers) {
+    var list = document.getElementById('customerList');
+    if (!customers || customers.length === 0) {
+      list.innerHTML = '<div class="empty-state">本日の予約はありません</div>';
+      return;
     }
-    html += '<span class="expand-icon" id="icon_' + idx + '">▼</span>';
-    html += '</div></div>';
 
-    html += '<div class="customer-body" id="body_' + idx + '">';
-    html += '<div class="form-group"><label class="form-label">サイズ・デザイン</label>';
-    html += '<input class="form-input" id="design_' + idx + '" placeholder="例: 3×3 ハートとクローバー" value="' + menuVal + '"></div>';
-    html += '<div class="form-group"><label class="form-label">施術部位</label>';
-    html += '<input class="form-input" id="area_' + idx + '" placeholder="例: 右膝上"></div>';
-    html += '<div class="form-group"><label class="form-label">メモ（来店動機・職業など）</label>';
-    html += '<textarea class="form-input" id="memo_' + idx + '" placeholder="自由記述"></textarea></div>';
-    html += '<label class="form-label">施術写真</label>';
-    html += '<input type="file" id="file_' + idx + '" accept="image/*" multiple>';
-    html += '<div class="photo-upload-area" id="upload_' + idx + '" onclick="triggerFile(' + idx + ')">';
-    html += '<div class="thumb-grid" id="thumbGrid_' + idx + '"></div>';
-    html += '<div class="upload-icon">📷</div>';
-    html += '<div class="upload-text" id="uploadText_' + idx + '">タップして写真を選ぶ（最大4枚）</div></div>';
-    html += '<div class="loading-msg" id="loading_' + idx + '">送信中...</div>';
-    html += '<div class="result-msg" id="result_' + idx + '"></div>';
-    html += '<div class="action-row">';
-    html += '<button class="btn-carte" onclick="saveCarte(' + idx + ')">カルテ保存</button>';
-    html += '<button class="btn-line" id="sendBtn_' + idx + '" onclick="sendPhoto(' + idx + ')" ' + lineDisabled + '>' + lineLabel + '</button>';
-    html += '</div>';
-    html += '<a href="' + storesUrl + '" target="_blank" class="stores-btn">STORESで顧客を開く</a>';
-    if (c.storesId) {
-      html += '<a href="https://reserve.stores.app/m/reservations/' + c.storesId + '" target="_blank" class="stores-btn">【10】予約メモに画像を追加</a>';
-    }
-    html += '<div class="stores-id-section">';
-    html += '<label class="form-label">STORES顧客ID（' + storesIdLabel + '）</label>';
-    html += '<div class="stores-id-row">';
-    html += '<input class="stores-id-input" id="storesId_' + idx + '" placeholder="URLの末尾の数字" value="' + storesIdVal + '">';
-    html += '<button class="btn-save-id" onclick="saveStoresId(' + idx + ')">保存</button>';
-    html += '</div></div></div></div>';
-  }
-  list.innerHTML = html;
+    var html = '';
+    for (var idx = 0; idx < customers.length; idx++) {
+      var c = customers[idx];
+      state[idx] = {
+        photos:      [],
+        displayName: c.displayName,
+        staff:       c.staff,
+        storesId:    c.storesId || '',
+        basicId:     c.basicId  || ''
+      };
 
-  for (var i = 0; i < customers.length; i++) {
-    (function(idx) {
-      document.getElementById('file_' + idx).addEventListener('change', function(e) {
-        var files = Array.from(e.target.files);
-        if (!files.length) return;
-        state[idx].photos = [];
-        var thumbGrid = document.getElementById('thumbGrid_' + idx);
-        thumbGrid.innerHTML = '';
-        var loaded = 0;
-        files.forEach(function(file) {
-          // canvasで標準JPEGに変換（Pixel 9 Ultra HDRなど非標準フォーマット対策）
-          var objectUrl = URL.createObjectURL(file);
-          var imgEl = new Image();
-          imgEl.onload = function() {
-            var canvas = document.createElement('canvas');
-            canvas.width = imgEl.naturalWidth;
-            canvas.height = imgEl.naturalHeight;
-            canvas.getContext('2d').drawImage(imgEl, 0, 0);
-            URL.revokeObjectURL(objectUrl);
-            canvas.toBlob(function(blob) {
-              var reader = new FileReader();
-              reader.onload = function(ev) {
-                state[idx].photos.push({ base64: ev.target.result.split(',')[1], mimeType: 'image/jpeg' });
-                var thumb = document.createElement('img');
-                thumb.src = ev.target.result;
-                thumb.className = 'thumb-img';
-                thumbGrid.appendChild(thumb);
-                loaded++;
-                if (loaded === files.length) {
-                  document.getElementById('uploadText_' + idx).textContent = files.length + '枚選択中';
-                  document.getElementById('upload_' + idx).classList.add('has-photo');
-                }
-              };
-              reader.readAsDataURL(blob);
-            }, 'image/jpeg', 0.92);
-          };
-          imgEl.src = objectUrl;
-        });
-      });
-    })(i);
-  }
-}
+      var storesUrl     = c.storesId ? 'https://reserve.stores.app/dashboard/customers/' + c.storesId : 'https://reserve.stores.app/dashboard/customers';
+      var noLineBadge   = c.hasLineId ? '' : '<span class="no-line-badge">LINE未登録</span>';
+      var menuVal       = c.menu ? c.menu.replace(/"/g, '&quot;') : '';
+      var storesIdVal   = c.storesId ? c.storesId : '';
+      var avatarChar    = c.lastName ? c.lastName.charAt(0) : '?';
+      var lineDisabled  = c.hasLineId ? '' : 'disabled';
+      var lineLabel     = c.hasLineId ? '【6】📸 LINE送信' : '📵 LINE未登録';
+>>>>>>> 0ee02af (エラーハンドリングを強化（setSharing/LINE API/writeLog）)
 
-function triggerFile(idx) { document.getElementById('file_' + idx).click(); }
-
-function toggleCard(idx) {
-  document.getElementById('body_' + idx).classList.toggle('open');
-  document.getElementById('icon_' + idx).classList.toggle('open');
-}
-
-function getCartePayload(idx) {
-  return {
-    displayName: state[idx].displayName,
-    storesId:    state[idx].storesId,
-    staff:       state[idx].staff,
-    design:      document.getElementById('design_' + idx).value,
-    area:        document.getElementById('area_'   + idx).value,
-    memo:        document.getElementById('memo_'   + idx).value
-  };
-}
-
-function showResult(idx, success, msg) {
-  var el = document.getElementById('result_' + idx);
-  el.className = 'result-msg ' + (success ? 'success' : 'error');
-  el.textContent = msg;
-}
-
-function formatCarteText(idx) {
-  var d = new Date();
-  var dateStr = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
-  var staff  = state[idx].staff || '';
-  var design = document.getElementById('design_' + idx).value;
-  var area   = document.getElementById('area_'   + idx).value;
-  var memo   = document.getElementById('memo_'   + idx).value;
-  var text = dateStr + (staff ? '.' + staff : '') + '\n';
-  if (design) text += design;
-  if (area)   text += '（' + area + '）';
-  if (design || area) text += '\n';
-  if (memo)   text += memo;
-  return text.trim();
-}
-
-function showCarteResult(idx) {
-  var text = formatCarteText(idx);
-  carteTexts[idx] = text;
-  var el = document.getElementById('result_' + idx);
-  el.className = 'result-msg success';
-  el.innerHTML =
-    'カルテを保存しました' +
-    '<div class="carte-preview">' + text.replace(/\n/g, '<br>') + '</div>' +
-    '<button class="btn-copy" id="copyBtn_' + idx + '" onclick="copyCarteText(' + idx + ')">STORESにコピー</button>';
-}
-
-function copyCarteText(idx) {
-  var text = carteTexts[idx];
-  var btn  = document.getElementById('copyBtn_' + idx);
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(function() {
-      btn.textContent = 'コピーしました';
-      setTimeout(function() { btn.textContent = 'STORESにコピー'; }, 2000);
-    });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    btn.textContent = 'コピーしました';
-    setTimeout(function() { btn.textContent = 'STORESにコピー'; }, 2000);
-  }
-}
-
-function saveCarte(idx) {
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res.success) showCarteResult(idx);
-      else showResult(idx, false, res.error);
-    })
-    .withFailureHandler(function(err) { showResult(idx, false, err.message); })
-    .saveCarteData(getCartePayload(idx));
-}
-
-function sendPhoto(idx) {
-  if (!state[idx].photos || state[idx].photos.length === 0) return;
-  document.getElementById('sendBtn_'  + idx).disabled = true;
-  document.getElementById('loading_'  + idx).classList.add('visible');
-  document.getElementById('result_'   + idx).className = 'result-msg';
-  google.script.run
-    .withSuccessHandler(function(res) {
-      document.getElementById('loading_' + idx).classList.remove('visible');
-      if (res.success) showResult(idx, true, 'LINEを送信しました');
-      else {
-        showResult(idx, false, res.error);
-        document.getElementById('sendBtn_' + idx).disabled = false;
+      html += '<div class="customer-card" id="card_' + idx + '">';
+      html += '<div class="customer-header" onclick="toggleCard(' + idx + ')">';
+      html += '<div class="customer-avatar">' + avatarChar + '</div>';
+      html += '<div class="customer-info">';
+      html += '<div class="customer-name">' + c.lastName + noLineBadge + '</div>';
+      html += '<div class="customer-meta">' + c.time + ' · 担当：' + c.staff + '</div>';
+      html += '</div>';
+      html += '<div class="header-btns">';
+      if (c.storesId) {
+        html += '<button class="btn-qr" onclick="showQR(event,' + idx + ')">【1】QR</button>';
       }
-    })
-    .withFailureHandler(function(err) {
-      document.getElementById('loading_' + idx).classList.remove('visible');
-      showResult(idx, false, err.message);
-      document.getElementById('sendBtn_' + idx).disabled = false;
-    })
-    .sendPhotoFromPWA(state[idx].displayName, state[idx].storesId, state[idx].photos, getCartePayload(idx));
-}
+      html += '<span class="expand-icon" id="icon_' + idx + '">▼</span>';
+      html += '</div></div>';
 
-function saveStoresId(idx) {
-  var storesId = document.getElementById('storesId_' + idx).value.trim();
-  if (!storesId) { alert('IDを入力してください'); return; }
-  google.script.run
-    .withSuccessHandler(function(res) {
-      showResult(idx, res.success, res.success ? 'STORES IDを保存しました' : res.error);
-    })
-    .withFailureHandler(function(err) { showResult(idx, false, err.message); })
-    .saveStoresId(state[idx].displayName, storesId);
-}
+      html += '<div class="customer-body" id="body_' + idx + '">';
+      html += '<div class="form-group"><label class="form-label">【2】サイズ・デザイン（追記必須）</label>';
+      html += '<input class="form-input" id="design_' + idx + '" placeholder="例: 3×3 ハートとクローバー" value="' + menuVal + '"></div>';
+      html += '<div class="form-group"><label class="form-label">【3】施術部位</label>';
+      html += '<input class="form-input" id="area_' + idx + '" placeholder="例: 右膝上"></div>';
+      html += '<div class="form-group"><label class="form-label">【4】メモ（来店動機・職業など）</label>';
+      html += '<textarea class="form-input" id="memo_' + idx + '" placeholder="自由記述"></textarea></div>';
+      html += '<label class="form-label">施術写真</label>';
+      html += '<input type="file" id="file_' + idx + '" accept="image/*" multiple>';
+      html += '<div class="photo-upload-area" id="upload_' + idx + '" onclick="triggerFile(' + idx + ')">';
+      html += '<div class="thumb-grid" id="thumbGrid_' + idx + '"></div>';
+      html += '<div class="upload-icon">📷</div>';
+      html += '<div class="upload-text" id="uploadText_' + idx + '">【5】タップして写真を選ぶ（最大4枚）</div></div>';
+      html += '<div class="loading-msg" id="loading_' + idx + '">送信中...</div>';
+      html += '<div class="result-msg" id="result_' + idx + '"></div>';
+      html += '<div class="action-row">';
+      html += '<button class="btn-carte" onclick="saveCarte(' + idx + ')">【7】カルテ保存</button>';
+      html += '<button class="btn-line" id="sendBtn_' + idx + '" onclick="sendPhoto(' + idx + ')" ' + lineDisabled + '>' + lineLabel + '</button>';
+      html += '</div>';
+      html += '<div class="stores-id-section">';
+      html += '<a href="' + storesUrl + '" target="_blank" class="stores-btn">【9】STORESで顧客を開く（顧客メモにペースト）</a>';
+      if (c.storesId) {
+        html += '<a href="https://reserve.stores.app/m/reservations/' + c.storesId + '" target="_blank" class="stores-btn">【10】予約メモに画像を追加</a>';
+      }
+      html += '<div class="stores-id-section">';
+      html += '<label class="form-label">STORES顧客ID</label>';
+      html += '<input class="stores-id-input" id="storesId_' + idx + '" placeholder="URLの末尾の数字" value="' + storesIdVal + '">';
+      html += '<button class="btn-save-id" onclick="saveStoresId(' + idx + ')">保存</button>';
+      html += '</div></div></div></div>';
+    }
+    list.innerHTML = html;
 
-var currentQRState = { storesId: '', basicId: '' };
-
-function showQR(event, idx) {
-  event.stopPropagation();
-  var storesId = state[idx].storesId;
-  var basicId  = state[idx].basicId;
-
-  if (storeList.length > 1) {
-    var options = storeList.map(function(s) {
-      var selected = (s.basicId === basicId) ? ' selected' : '';
-      return '<option value="' + s.basicId + '"' + selected + '>' + s.name + '</option>';
-    }).join('');
-    document.getElementById('qrStoreSelect').innerHTML = options;
-    document.getElementById('qrStoreSelectRow').style.display = 'block';
-    document.getElementById('qrStoreSelect').onchange = function() {
-      currentQRState.basicId = this.value;
-      document.getElementById('qrImageArea').style.display = 'none';
-    };
-    basicId = basicId || storeList[0].basicId;
-  } else if (storeList.length === 1) {
-    basicId = storeList[0].basicId;
-  } else if (!basicId) {
-    alert('店舗マスタのD列にbasicId(@xxxxx形式)を入力してください');
-    return;
+    for (var i = 0; i < customers.length; i++) {
+      (function(idx) {
+        document.getElementById('file_' + idx).addEventListener('change', function(e) {
+          var files = Array.from(e.target.files);
+          if (!files.length) return;
+          state[idx].photos = [];
+          var thumbGrid = document.getElementById('thumbGrid_' + idx);
+          thumbGrid.innerHTML = '';
+          var loaded = 0;
+          files.forEach(function(file) {
+            var MAX = 800;
+            var objectUrl = URL.createObjectURL(file);
+            var imgEl = new Image();
+            imgEl.onload = function() {
+              var w = imgEl.naturalWidth, h = imgEl.naturalHeight;
+              if (w > MAX || h > MAX) {
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else { w = Math.round(w * MAX / h); h = MAX; }
+              }
+              var canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+              URL.revokeObjectURL(objectUrl);
+              canvas.toBlob(function(blob) {
+                if (!blob) {
+                  loaded++;
+                  document.getElementById('uploadText_' + idx).textContent = '写真の読み込みエラー';
+                  return;
+                }
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                  state[idx].photos.push({ base64: ev.target.result.split(',')[1], mimeType: 'image/jpeg' });
+                  var thumb = document.createElement('img');
+                  thumb.src = ev.target.result;
+                  thumb.className = 'thumb-img';
+                  thumbGrid.appendChild(thumb);
+                  loaded++;
+                  if (loaded === files.length) {
+                    document.getElementById('uploadText_' + idx).textContent = state[idx].photos.length + '枚選択中';
+                    document.getElementById('upload_' + idx).classList.add('has-photo');
+                  }
+                };
+                reader.readAsDataURL(blob);
+              }, 'image/jpeg', 0.85);
+            };
+            imgEl.onerror = function() {
+              URL.revokeObjectURL(objectUrl);
+              loaded++;
+              document.getElementById('uploadText_' + idx).textContent = '写真の読み込みエラー';
+            };
+            imgEl.src = objectUrl;
+          });
+        });
+      })(i);
+    }
   }
 
-  currentQRState.storesId = storesId;
-  currentQRState.basicId  = basicId;
-  document.getElementById('qrImageArea').style.display = 'none';
-  document.getElementById('qrImg').src = '';
-  document.getElementById('qrModal').classList.add('open');
-}
+  function triggerFile(idx) { document.getElementById('file_' + idx).click(); }
 
-function selectConsent(consent) {
-  var suffix  = consent === 'yes' ? ' \u540C\u610F' : ' \u975E\u540C\u610F';
-  var text    = 'storesId:' + currentQRState.storesId + suffix;
-  var lineUrl = 'https://line.me/R/oaMessage/' + currentQRState.basicId + '/?text=' + encodeURIComponent(text);
-  document.getElementById('qrImg').src = '';
-  document.getElementById('qrImg').alt = '生成中...';
-  document.getElementById('qrImageArea').style.display = 'block';
-  google.script.run
-    .withSuccessHandler(function(dataUrl) {
-      document.getElementById('qrImg').src = dataUrl;
-      document.getElementById('qrImg').alt = 'QR';
-    })
-    .withFailureHandler(function() {
-      document.getElementById('qrImg').alt = '生成失敗';
-    })
-    .getQRDataUrl(lineUrl);
-}
+  function toggleCard(idx) {
+    document.getElementById('body_' + idx).classList.toggle('open');
+    document.getElementById('icon_' + idx).classList.toggle('open');
+  }
 
-function closeQR() {
-  document.getElementById('qrModal').classList.remove('open');
-  document.getElementById('qrStoreSelectRow').style.display = 'none';
-  document.getElementById('qrImageArea').style.display = 'none';
-  currentQRState = { storesId: '', basicId: '' };
-}
+  function getCartePayload(idx) {
+    return {
+      displayName: state[idx].displayName,
+      storesId:    state[idx].storesId,
+      staff:  state[idx].staff,
+      design: document.getElementById('design_' + idx).value,
+      area:   document.getElementById('area_'   + idx).value,
+      memo:   document.getElementById('memo_'   + idx).value
+    };
+  }
+
+  function showResult(idx, success, msg) {
+    var el = document.getElementById('result_' + idx);
+    el.className = 'result-msg ' + (success ? 'success' : 'error');
+    el.textContent = msg;
+  }
+
+  function formatCarteText(idx) {
+    var d = new Date();
+    var dateStr = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+    var staff  = state[idx].staff || '';
+    var design = document.getElementById('design_' + idx).value;
+    var area   = document.getElementById('area_'   + idx).value;
+    var memo   = document.getElementById('memo_'   + idx).value;
+    var text = dateStr + (staff ? '.' + staff : '') + '\n';
+    if (design) text += design;
+    if (area)   text += '（' + area + '）';
+    if (design || area) text += '\n';
+    if (memo)   text += memo;
+    return text.trim();
+  }
+
+  function showCarteResult(idx) {
+    var text = formatCarteText(idx);
+    carteTexts[idx] = text;
+    var el = document.getElementById('result_' + idx);
+    el.className = 'result-msg success';
+    el.innerHTML =
+      '✅ カルテを保存しました。STORES顧客メモ欄にペーストしてください。' +
+      '<div class="carte-preview">' + text.replace(/\n/g, '<br>') + '</div>' +
+      '<button class="btn-copy" id="copyBtn_' + idx + '" onclick="copyCarteText(' + idx + ')">📋 【8】カルテをコピー</button>';
+  }
+
+  function copyCarteText(idx) {
+    var text = carteTexts[idx];
+    var btn  = document.getElementById('copyBtn_' + idx);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = '✅ コピーしました！';
+        setTimeout(function() { btn.textContent = '📋 【8】カルテをコピー'; }, 2000);
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✅ コピーしました！';
+      setTimeout(function() { btn.textContent = '📋 【8】カルテをコピー'; }, 2000);
+    }
+  }
+
+  function saveCarte(idx) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.success) showCarteResult(idx);
+        else showResult(idx, false, '❌ ' + res.error);
+      })
+      .withFailureHandler(function(err) { showResult(idx, false, '❌ ' + err.message); })
+      .saveCarteData(getCartePayload(idx));
+  }
+
+  function sendPhoto(idx) {
+    if (!state[idx].photos || state[idx].photos.length === 0) return;
+    document.getElementById('sendBtn_'  + idx).disabled = true;
+    document.getElementById('loading_'  + idx).classList.add('visible');
+    document.getElementById('result_'   + idx).className = 'result-msg';
+    google.script.run
+      .withSuccessHandler(function(res) {
+        document.getElementById('loading_' + idx).classList.remove('visible');
+        if (res.success) showResult(idx, true, '✅ LINEを送信しました！');
+        else {
+          showResult(idx, false, '❌ ' + res.error);
+          document.getElementById('sendBtn_' + idx).disabled = false;
+        }
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('loading_' + idx).classList.remove('visible');
+        showResult(idx, false, '❌ ' + err.message);
+        document.getElementById('sendBtn_' + idx).disabled = false;
+      })
+      .sendPhotoFromPWA(state[idx].displayName, state[idx].storesId, state[idx].photos, getCartePayload(idx));
+  }
+
+  function saveStoresId(idx) {
+    var storesId = document.getElementById('storesId_' + idx).value.trim();
+    if (!storesId) { alert('IDを入力してください'); return; }
+    google.script.run
+      .withSuccessHandler(function(res) {
+        showResult(idx, res.success, res.success ? '✅ STORES IDを保存しました' : '❌ ' + res.error);
+      })
+      .withFailureHandler(function(err) { showResult(idx, false, '❌ ' + err.message); })
+      .saveStoresId(state[idx].displayName, storesId);
+  }
+
+  var currentQRState = { storesId: '', basicId: '' };
+
+  function showQR(event, idx) {
+    event.stopPropagation();
+    var storesId = state[idx].storesId;
+    var basicId  = state[idx].basicId;
+
+    if (storeList.length > 1) {
+      var options = storeList.map(function(s) {
+        var selected = (s.basicId === basicId) ? ' selected' : '';
+        return '<option value="' + s.basicId + '"' + selected + '>' + s.name + '</option>';
+      }).join('');
+      document.getElementById('qrStoreSelect').innerHTML = options;
+      document.getElementById('qrStoreSelectRow').style.display = 'block';
+      document.getElementById('qrStoreSelect').onchange = function() {
+        currentQRState.basicId = this.value;
+        document.getElementById('qrImageArea').style.display = 'none';
+      };
+      basicId = basicId || storeList[0].basicId;
+    } else if (storeList.length === 1) {
+      basicId = storeList[0].basicId;
+    } else if (!basicId) {
+      alert('店舗マスタのD列にbasicId(@xxxxx形式)を入力してください');
+      return;
+    }
+
+    currentQRState.storesId = storesId;
+    currentQRState.basicId  = basicId;
+    document.getElementById('qrImageArea').style.display = 'none';
+    document.getElementById('qrImg').src = '';
+    document.getElementById('qrModal').classList.add('open');
+  }
+
+  function selectConsent(consent) {
+    var suffix  = consent === 'yes' ? ' \u540C\u610F' : ' \u975E\u540C\u610F';
+    var text    = 'storesId:' + currentQRState.storesId + suffix;
+    var lineUrl = 'https://line.me/R/oaMessage/' + currentQRState.basicId + '/?text=' + encodeURIComponent(text);
+    document.getElementById('qrImg').src = '';
+    document.getElementById('qrImg').alt = '生成中...';
+    document.getElementById('qrImageArea').style.display = 'block';
+    google.script.run
+      .withSuccessHandler(function(dataUrl) {
+        document.getElementById('qrImg').src = dataUrl;
+        document.getElementById('qrImg').alt = 'QR';
+      })
+      .withFailureHandler(function() {
+        document.getElementById('qrImg').alt = '生成失敗';
+      })
+      .getQRDataUrl(lineUrl);
+  }
+
+  function closeQR() {
+    document.getElementById('qrModal').classList.remove('open');
+    document.getElementById('qrStoreSelectRow').style.display = 'none';
+    document.getElementById('qrImageArea').style.display = 'none';
+    currentQRState = { storesId: '', basicId: '' };
+  }
 </script>
 </body>
 </html>

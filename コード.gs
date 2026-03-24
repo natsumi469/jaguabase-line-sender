@@ -252,7 +252,11 @@ function sendPhotoFromPWA(displayName, storesId, photosArray, carteData) {
       const fileName = filePrefix + dateStr + '_' + resolvedName + design + '_' + (i+1) + '.' + ext;
       const blob     = Utilities.newBlob(Utilities.base64Decode(photo.base64), mimeType, fileName);
       const file     = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      try {
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch(shareErr) {
+        console.log('setSharing失敗（共有制限の可能性）: ' + shareErr.message);
+      }
       imageUrls.push('https://lh3.googleusercontent.com/d/' + file.getId());
     }
 
@@ -321,11 +325,15 @@ function sendLineMessage(token, userId, imageUrls, storeName, staffName) {
   }));
   messages.push({ type: 'text', text: messageText });
 
-  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+  const lineResp = UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
     method: 'post',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    payload: JSON.stringify({ to: userId, messages: messages })
+    payload: JSON.stringify({ to: userId, messages: messages }),
+    muteHttpExceptions: true
   });
+  if (lineResp.getResponseCode() !== 200) {
+    throw new Error('LINE API ' + lineResp.getResponseCode() + ': ' + lineResp.getContentText().substring(0, 300));
+  }
 }
 
 // ==========================================
@@ -574,8 +582,11 @@ function getCustomerConsent(displayName) {
 // ==========================================
 
 function writeLog(displayName, store, status, error) {
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.LOGS)
-    .appendRow([new Date(), displayName, store, status, error || '']);
+  try {
+    const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAMES.LOGS);
+    if (!logSheet) return;
+    logSheet.appendRow([new Date(), displayName, store, status, error || '']);
+  } catch(e) {}
 }
 
 function checkDailyCarteAndNotify() {
