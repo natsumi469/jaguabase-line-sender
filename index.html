@@ -253,29 +253,25 @@
               }
               var canvas = document.createElement('canvas');
               canvas.width = w; canvas.height = h;
-              canvas.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+              var ctx = canvas.getContext('2d');
               URL.revokeObjectURL(objectUrl);
-              canvas.toBlob(function(blob) {
-                if (!blob) {
-                  loaded++;
-                  document.getElementById('uploadText_' + idx).textContent = '写真の読み込みエラー';
-                  return;
-                }
-                var reader = new FileReader();
-                reader.onload = function(ev) {
-                  state[idx].photos.push({ base64: ev.target.result.split(',')[1], mimeType: 'image/jpeg' });
-                  var thumb = document.createElement('img');
-                  thumb.src = ev.target.result;
-                  thumb.className = 'thumb-img';
-                  thumbGrid.appendChild(thumb);
-                  loaded++;
-                  if (loaded === files.length) {
-                    document.getElementById('uploadText_' + idx).textContent = state[idx].photos.length + '枚選択中';
-                    document.getElementById('upload_' + idx).classList.add('has-photo');
-                  }
-                };
-                reader.readAsDataURL(blob);
-              }, 'image/jpeg', 0.85);
+              if (!ctx) {
+                loaded++;
+                document.getElementById('uploadText_' + idx).textContent = '写真の読み込みエラー';
+                return;
+              }
+              ctx.drawImage(imgEl, 0, 0, w, h);
+              var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              state[idx].photos.push({ base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+              var thumb = document.createElement('img');
+              thumb.src = dataUrl;
+              thumb.className = 'thumb-img';
+              thumbGrid.appendChild(thumb);
+              loaded++;
+              if (loaded === files.length) {
+                document.getElementById('uploadText_' + idx).textContent = state[idx].photos.length + '枚選択中';
+                document.getElementById('upload_' + idx).classList.add('has-photo');
+              }
             };
             imgEl.onerror = function() {
               URL.revokeObjectURL(objectUrl);

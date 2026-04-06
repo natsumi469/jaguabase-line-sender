@@ -451,7 +451,10 @@ function saveStoresId(displayName, storesId) {
         return { success: true };
       }
     }
-    return { success: false, error: 'customer not found' };
+    // 見つからない場合は新規行を追加
+    const parsed = parseLineName(displayName);
+    sheet.appendRow([displayName, '', parsed.lastName || '', parsed.date || '', '', '', new Date(), storesId]);
+    return { success: true };
   } catch(e) {
     return { success: false, error: e.message };
   }
